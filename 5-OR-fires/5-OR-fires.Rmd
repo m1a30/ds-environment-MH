@@ -45,7 +45,7 @@ HINT: The files are nested within folders so be aware of your file paths.
 # DSM_HARV <-
   # rast("data/NEON-DS-Airborne-Remote-Sensing/HARV/DSM/HARV_dsmCrop.tif")
 
-rebel_rast <- rast("soil-burn-severity/2017_rebel_sbs/rebel_sbs2.tif")
+#rebel_rast <- rast("soil-burn-severity/2017_rebel_sbs/rebel_sbs2.tif")
 terwilliger_rast <- rast("soil-burn-severity/2018_terwilliger_sbs/SoilSeverity.tif")
 beachie_rast <- rast("soil-burn-severity/2020_beachiecreek_sbs/BeachieCreek_SBS_final.tif")
 holiday_rast <- rast("soil-burn-severity/2020_holidayfarm_sbs/HolidayFarm_SBS_final.tif")
@@ -55,7 +55,6 @@ holiday_rast <- rast("soil-burn-severity/2020_holidayfarm_sbs/HolidayFarm_SBS_fi
 b. Summarize the values of the rasters. Take note of the labels associated with the data values because you will need it for plotting.
 
 ```{r}
-summary(values(rebel_rast))
 summary(values(terwilliger_rast))
 summary(values(beachie_rast))
 summary(values(holiday_rast))
@@ -70,18 +69,12 @@ HINT HINT: Remember to check the labels of the data values to be able to set the
 
 
 ```{r ggplot-raster1, fig.cap="Holiday plot with ggplot2 using the Spectral color scale"}
-rebel_rast_df <- as.data.frame(rebel_rast, xy = TRUE)
 holiday_rast_df <- as.data.frame(holiday_rast, xy=TRUE)
 
 
 ggplot() +
     geom_raster(data = holiday_rast_df , aes(x = x, y = y, fill = Layer_1)) +
-    scale_fill_brewer(palette = "Spectral", direction=-1)
-
-
-ggplot() +
-    geom_raster(data = holiday_rast_df , aes(x = x, y = y, fill = Layer_1)) +
-    scale_fill_brewer(palette = "Spectral", direction=-1)
+    scale_fill_brewer(palette = "Spectral", direction=-1) +  labs(fill='Burn Severity') 
 ```
 
 ```{r ggplot-raster2, fig.cap="Beachie plot with ggplot2 using the Spectral color scale"}
@@ -89,7 +82,7 @@ beachie_rast_df <- as.data.frame(beachie_rast, xy=TRUE)
 
 ggplot() +
     geom_raster(data = beachie_rast_df , aes(x = x, y = y, fill = Layer_1)) +
-    scale_fill_brewer(palette = "Spectral", direction=-1)
+    scale_fill_brewer(palette = "Spectral", direction=-1) +  labs(fill='Burn Severity') 
 
 ```
 
@@ -99,7 +92,7 @@ terwilliger_rast_df <- as.data.frame(terwilliger_rast, xy = TRUE)
 
 ggplot() +
     geom_raster(data = terwilliger_rast_df , aes(x = x, y = y, fill = SoilBurnSe)) +
-    scale_fill_brewer(palette = "Spectral", direction=-1)
+    scale_fill_brewer(palette = "Spectral", direction=-1) +  labs(fill='Burn Severity') 
 
 ```
 
@@ -249,7 +242,8 @@ ggplot() +
                    fill = Layer_1)) +
        geom_raster(data = beachie_rast_df_2, 
                  aes(x = x, y = y, 
-                   fill = Layer_1)) 
+                   fill = Layer_1)) +
+  labs(fill='Burn Severity') 
 
 #    + scale_fill_gradientn(name = "Elevation", colors = terrain.colors(10))
 
@@ -301,9 +295,10 @@ ggplot() +
                    fill = Layer_1)) +
        geom_raster(data = beachie_rast_df_2, 
                  aes(x = x, y = y, 
-                   fill = Layer_1)) 
+                   fill = Layer_1))  + 
+   labs(fill='Burn Severity') 
 
-unique(terwilliger_rast_df_2$SoilBurnSe)
+#unique(terwilliger_rast_df_2$SoilBurnSe)
 
 ```
 The scale bar make sense! It would be nice to have a baselayer map to see where is Oregon these fires are.
@@ -322,10 +317,10 @@ eco_region <- st_read( "OR-ecoregions/Ecoregions_OregonConservationStrategy.shp"
 b. Check the projection and re-project if needed. We did not cover this in the lecture demo, but for vector data, use st_transform()
 
 ```{r or-crs}
-crs(eco_region, proj=TRUE)
-st_crs(holiday_rast, proj=TRUE)
+#crs(eco_region, proj=TRUE)
+#st_crs(holiday_rast, proj=TRUE)
 
-?st_transform
+#?st_transform
 eco_region <- st_transform(eco_region, crs= st_crs(holiday_rast))
 
 #st_crs(eco_region)
@@ -346,7 +341,8 @@ ggplot()  +
        geom_raster(data = beachie_rast_df_2, 
                  aes(x = x, y = y, 
                    fill = Layer_1)) +
-  geom_sf(data = eco_region, fill=NA)
+  geom_sf(data = eco_region, fill=NA) + 
+  labs(fill='Burn Severity') 
 
 ```
 We could get fancy and zoom into the correct region using extent, which we will cover next week. For now, this looks pretty good. 
@@ -366,7 +362,8 @@ ggplot() +
   geom_bar(data=terwilliger_rast_df_2, aes(x=SoilBurnSe, y = (..count..)/sum(..count..), fill = as.factor(SoilBurnSe))) +
   geom_bar(data=beachie_rast_df_2, aes(x=Layer_1, y = (..count..)/sum(..count..), fill = as.factor(Layer_1))) +
   geom_bar(data=holiday_rast_df_2, aes(x=Layer_1, y = (..count..)/sum(..count..), fill = as.factor(Layer_1))) + 
-  scale_fill_brewer(palette = "Spectral", direction=-1)
+  scale_fill_brewer(palette = "Spectral", direction=-1) + 
+  labs(fill='Burn Severity') + xlab("Burn Severity") + ylab("Proportion of Count of Each Fire Severity")
 
 ```
 b. What do you notice about the frequency of different severity classes when you compare these barplots. How does this relate to the Haldofsky reading?
