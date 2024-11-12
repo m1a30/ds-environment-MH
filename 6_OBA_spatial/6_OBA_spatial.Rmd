@@ -1,6 +1,6 @@
 ---
 title: "Exploring bee-related spatial data"
-output: github_document
+output: pdf_document
 author:
   - Lauren Ponisio
 ---
@@ -27,21 +27,36 @@ library(sf)
 
 a. Import the OBA data.
 ```{r}
+OBA_data <- read.csv("OBA_2018-2023.csv")
+head(OBA_data)
 
 ```
 
 b. Find the columns related to genus and species and paste them together (with a space between) using the function paste(). Name the new column GenusSpecies.
 ```{r}
 
+colnames(OBA_data)
+#?paste
+#OBA_data$GenusSpecies
+OBA_data <- OBA_data %>% 
+  mutate(GenusSpecies = paste(OBA_data$Genus,OBA_data$Species, sep = " "))
+
+colnames(OBA_data)
+
 ```
 
 c. Use `sort()` and `unique()` to print the unique values of GenusSpecies in alphabetical order.  How many species are there? 
 
 ```{r}
+?sort
+length(unique(sort(OBA_data$GenusSpecies)))
 
 ```
 
 Some specimens are not identified to species, only genus. How is this reflected in the data? 
+
+This is reflected in the data by having just a space after the genus name.
+
 In two weeks we will learn how to clean this up using regular expressions. 
 
 d. So many bees, so little time. Count up the occurrences of each bee species, and subset the data to bees that have been seen at least two times. 
@@ -49,13 +64,26 @@ You can use the tidyverse or any other functions in R that you like. How many "s
 
 ```{r}
 
+# counting how many times each unique bee shows up and subset data to bees seen at least two times
+#(https://stackoverflow.com/questions/24503279/return-df-with-a-columns-values-that-oc# cur-more-than-once)
+occur_more_than_twice <-  OBA_data %>% group_by(Species) %>% filter(n()>=2)
+
+# how many ~species are there 
+length(unique(occur_more_than_twice$Species))
+
 ```
 
 e. Google a few bee names (that have been seen > 2 times) and find one with an a look that resonates with you.
 
 What is the name of your bee? 
 
+Bombus vosnesenskii
+
 Import the photos into Rmarkdown below (hint: googling bee name "discover life" or "inat" can often get you a photo. Many bees will no have any photos :( 
+
+![](https://www.inaturalist.org/photos/353270971)
+
+
 
 # Lab part 2: Plotting the distrubution of your spirit bee. 
 
@@ -73,12 +101,35 @@ Hint 3: You may want to rename the column names you can use, colnames() and reas
 
 ```{r}
 
+# extracting X and Y locations from our species to create a spatial object
 
+vosnesenskii <- OBA_data %>%
+  filter(Species == "vosnesenskii")
+
+#Y <- vosnesenskii$Dec..Lat.
+#X <- vosnesenskii$Dec..Long.
+
+
+
+# set CRS
+?st_as_sf
+vosnesenskii_shp <- st_as_sf(vosnesenskii,
+                                   coords = c("Dec..Long.", "Dec..Lat."),
+                                   crs = st_crs("EPSG:4326"), na.fail = FALSE	
+)
+
+#create a spatial object
+st_write(vosnesenskii,
+         "vosnesenskii_final.shp", driver = "ESRI Shapefile", append=FALSE)
 ```
 
 b. Plot your exciting bee data!
 
 ```{r plot-data-points}
+
+ ggplot() +
+  geom_sf(data = vosnesenskii_shp, color = "hotpink") +
+  ggtitle("Map of vosnesenskii Locations")
 
 ```
 
@@ -90,13 +141,19 @@ Luckily we can download basemaps into R using the map_data function in ggplot (a
 or <- map_data("county", "oregon") %>% 
   select(lon = long, lat, group, id = subregion)
 
+ggplot() +
+  geom_polygon(data=or, aes(x=lon, y=lat, group=group))
+
 ```
 
 c. Add your species's points to your choice or an Oregon basemap. 
 
 ```{r plot-data-points-basemap}
-library(ggspatial)
+  
 
+ggplot() +
+  geom_polygon(data=or, aes(x=lon, y=lat)) +
+  geom_sf(data =vosnesenskii_shp , color = "hotpink") 
 
 ```
 # Lab part 3: Cartography
@@ -112,6 +169,8 @@ additional attributes when you converted the dataframe to a spatial object.
 
 ```{r plot-creative}
 
+# adding another spatial layer
+  # 
 
 ```
 
