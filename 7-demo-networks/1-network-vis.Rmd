@@ -99,7 +99,7 @@ V(g_named)$name # automatically generated when we created the network.
 V(g_named)$trophiclevel <- c("Carnivore", "Herbivore", "Primary producer", "Herbivore", "Primary producer")
 E(g_named)$type <- "Food web" # Edge attribute, assign "food web" to all edges
 E(g_named)$weight <- 10    # Edge weight, setting all existing edges to 10
-g_named <- set_graph_attr(g_named, "name", "Food web")
+g_named <- set_graph_attr(g_named, "name", "Food web") # set attributes for all graphs
 g_named
 ```
 We can then access those attributes. 
@@ -132,6 +132,7 @@ The entire network would be difficult to visualize, so let's subset the data to 
 bumbles <- oba[oba$Genus == "Bombus", ]
 bumbles$GenusSpecies <-  paste(bumbles$Genus, bumbles$Species)
 bumbles <- bumbles[, c("GenusSpecies", "Associated.plant")]
+# changing column names 
 colnames(bumbles) <- c("GenusSpecies", "PlantGenusSpecies")
 head(bumbles)
 ```
@@ -164,7 +165,7 @@ We have a variety of options for converting of data (which is basically an edge 
 ```{r, make-adj-1}
 ## 1. sum up interactions and take a look
 bumbles_adj <- table(bumbles)
-## write to a file
+## write to a file, (and you don't have to clean your data all over again!!)
 save(bumbles_adj, file="bumbles_adj_mat.Rdata")
 dim(bumbles_adj)
 bumbles_adj[1:5, 1:5] 
@@ -182,7 +183,7 @@ To use the 'forceNetwork' function we did for Le Mis, we need to convert our gra
 ```{r, plot-oba}
 ## find modules
 mod_bumbles <- cluster_walktrap(g_bumbles)
-## assign vertices to modules
+## assign vertices to modules/pulling out our groups
 groups <- membership(mod_bumbles)
 
 ## convert to a network 3d object
@@ -218,6 +219,8 @@ Consider using static network plots instead of network3D, see this [turorial](ht
 
 
 ```{r, plot-oba-challange}
+
+
 
 ```
 
