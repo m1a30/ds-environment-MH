@@ -1,0 +1,224 @@
+---
+title: "Network creation and visualization"
+author: "Lauren Ponisio, based on workshop by Katya Ognyanova"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+<!-- Lesson Overview -->
+# Computational Topics
+- Make a graph from scratch
+- Load in an edge list and create a graph 
+- Visualize networks. 
+
+
+```{r load-libraries, echo=FALSE, results="hide", message=FALSE, warning=FALSE}
+library(igraph)
+library(dplyr)
+library(networkD3)
+```
+
+In this lesson we will make some simple networks (i.e., graphs) in order to get a feeling for the structure of these type of data. We will also set the attributes of graphs (which we can eventually use for plotting).
+
+
+# Demo part 1: Plotting an existing network
+
+Let's begin by making a beautiful interactive graph of the interactions between characters in Le Mis.
+
+```{r load-data, echo=FALSE, results="hide"}
+data(MisLinks)
+data(MisNodes)
+
+head(MisNodes)
+head(MisLinks)
+```
+
+How is the network data conveyed? 
+
+```{r plot-leMis}
+forceNetwork(Links = MisLinks, Nodes = MisNodes,
+             Source = "source", Target = "target",
+             Value = "value", opacityNoHover = 0.9,
+             NodeID = "name",
+             Group = "group", opacity = 0.8, zoom=TRUE)
+```
+
+Exciting! 
+
+# Demo part 2: Making networks from scratch
+
+We can also create networks from scratch in a whole variety of ways. 'make_full_graph' creates a graph where all of the vertices are connected to each other. 
+
+```{r full-graph-creation}
+g_full <- make_full_graph(20) 
+plot(g_full)
+```
+
+We can also make a ring. 
+
+```{r ring-graph-creation}
+g_ring <- make_ring(5)
+plot(g_ring)
+```
+
+Or specify which vertices are connected. The default is that the edge are directed. Foodwebs are an example of a directed network. 
+
+```{r graph-creation}
+g_scratch <- graph(edges = c(1,2, 2,5, 6,10), n= 10)
+plot(g_scratch)
+```
+
+But we can make them undirected as well. Plant-pollinator interactions are an example of an undirected network (both species levels benefit from the interaction). 
+
+```{r graph-creation-undirected}
+g_undirected <- graph( edges=c(1,2, 2,5, 6,10), n=3, directed=FALSE) 
+plot(g_undirected)
+```
+
+Instead of vertex number we can use names. For example we can make a simple foodweb.
+
+```{r graph-creation-named}
+g_named <- graph( c("Fox", "Hair", "Hair", "Grass", "Fox", "Squirrels",
+                   "Squirrels", "Nuts", "Hair", "Nuts")) 
+# When the edge list has vertex names, the number of nodes is not needed
+plot(g_named)
+```
+graphs have edges and vertices, accessible with the function 'E()' and 'V()'. We can also count the number of edges and vertices, which would be useful if we had a larger, unknown network. 
+
+```{r,network-char}
+E(g_named) # edge list
+V(g_named) # vertex list
+ecount(g_named) # count
+vcount(g_named) # count
+```
+
+We can use use $ to create attributes and get attributes. 
+```{r, set-attributes}
+V(g_named)$name # automatically generated when we created the network.
+V(g_named)$trophiclevel <- c("Carnivore", "Herbivore", "Primary producer", "Herbivore", "Primary producer")
+E(g_named)$type <- "Food web" # Edge attribute, assign "food web" to all edges
+E(g_named)$weight <- 10    # Edge weight, setting all existing edges to 10
+g_named <- set_graph_attr(g_named, "name", "Food web")
+g_named
+```
+We can then access those attributes. 
+```{r, get-attributes}
+edge_attr(g_named)
+vertex_attr(g_named)
+graph_attr(g_named)
+graph_attr_names(g_named)
+graph_attr(g_named, "name")
+```
+
+We can manipulate a graph as an adjacency matrix.
+
+```{r, get.adjacency}
+g_named_adj <- get.adjacency(g_named)
+g_named_adj
+```
+
+# Demo part 3: Create a graph from OBA data, visualize it
+Let's load in our OBA data and make a network for all the bumble bees in Oregon. We will need to subset the data, then keep only the bee and plant species columns. 
+
+```{r, load-oba}
+oba <- read.csv("data/OBA_2018-2023.csv")
+str(oba)
+```
+
+The entire network would be difficult to visualize, so let's subset the data to just bumble bees. We need to extract only the columns that are relevant for the bee-plant interactions. The column "Associated.plant" has the floral species a bee was caught visiting, if it was caught on a flower.
+
+```{r, subset-obs}
+bumbles <- oba[oba$Genus == "Bombus", ]
+bumbles$GenusSpecies <-  paste(bumbles$Genus, bumbles$Species)
+bumbles <- bumbles[, c("GenusSpecies", "Associated.plant")]
+colnames(bumbles) <- c("GenusSpecies", "PlantGenusSpecies")
+head(bumbles)
+```
+
+There are a lot of blank rows from associated taxa for individuals not caught on a flower. We cannot do anything with those so we will just drop them. 
+
+```{r, subset-obs-2}
+bumbles <- bumbles[bumbles$PlantGenusSpecies != "",]
+sort(unique(bumbles$PlantGenusSpecies))
+```
+
+Ugg, there are a lot of weird name add ones that will cause inconsistencies when we make the network because any unique name will be considered a unique node. Next week we will learn how to clean these out using regular expressions. For these week we will just drop them...
+
+```{r, grep}
+really.bad.plant.name <- "Daucus carota (Queen Anne\x92s lace), chicory, field bindweed, field pea and dandelion"
+bumbles <- bumbles[bumbles$PlantGenusSpecies != really.bad.plant.name,]
+bad.plant.names <- grepl("\\(|,", bumbles$PlantGenusSpecies)
+
+bumbles <- bumbles[!bad.plant.names,]
+```
+
+
+We can explore the species in our network. These will be the vertices. 
+```{r, explore}
+table(bumbles$GenusSpecies)
+table(bumbles$PlantGenusSpecies)
+```
+We have a variety of options for converting of data (which is basically an edge list) into a graph. One is to sum up our interactions but bee-plant combinations to make an bipartite adjacency matrix. Then convert that matrix to a igraph object. 
+
+```{r, make-adj-1}
+## 1. sum up interactions and take a look
+bumbles_adj <- table(bumbles)
+## write to a file
+save(bumbles_adj, file="bumbles_adj_mat.Rdata")
+dim(bumbles_adj)
+bumbles_adj[1:5, 1:5] 
+```
+
+```{r, make-adj-2}
+## 2. convert to igraph bipartite adjacency matrix 
+g_bumbles <- graph_from_biadjacency_matrix(bumbles_adj, 
+                                           weighted =TRUE) 
+g_bumbles
+```
+
+To use the 'forceNetwork' function we did for Le Mis, we need to convert our graph into a dataframe. Luckily there is a function 'igraph_to_networkD3' to convert from graph objects to what the network3d package wants. That function also wants a each vertex assigned to a group. We have a variety of options on how to assign groups, one is to look for modules or compartments in the network. 
+
+```{r, plot-oba}
+## find modules
+mod_bumbles <- cluster_walktrap(g_bumbles)
+## assign vertices to modules
+groups <- membership(mod_bumbles)
+
+## convert to a network 3d object
+g_bumbles_net3d <- igraph_to_networkD3(g_bumbles, group=groups, 
+                                       what = "both")
+## plot the bumble-plant network
+forceNetwork(Links = g_bumbles_net3d$links,
+             Nodes = g_bumbles_net3d$nodes,
+            Source = "source", Target = "target",
+            Value = "value",  NodeID = "name",
+             Group = "group", 
+            opacity = 0.8, zoom=TRUE, opacityNoHover = 0.9)
+```
+
+We can also use a flow-like visualization plot. 
+
+```{r, plot-oba-2}
+
+sankeyNetwork(Links = g_bumbles_net3d$links,
+             Nodes = g_bumbles_net3d$nodes,
+            Source = "source", Target = "target",
+            Value = "value",  NodeID = "name", 
+            nodePadding = 0, height = 5000)
+```
+
+# In class: Visualization challange 1.
+
+Choose a different genus of bees and repeat the steps above to make a network. 
+
+# In class: Visualization challange 2. 
+How could we use graph attributes to create informative network visualizations? Set some attributes and use them to plot your network.
+Consider using static network plots instead of network3D, see this [turorial](https://yunranchen.github.io/intro-net-r/advanced-network-visualization.html#visualization-for-static-network) for examples.  
+
+
+```{r, plot-oba-challange}
+
+```
+
+
