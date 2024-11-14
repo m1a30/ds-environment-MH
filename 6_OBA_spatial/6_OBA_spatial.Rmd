@@ -149,10 +149,9 @@ ggplot() +
 c. Add your species's points to your choice or an Oregon basemap. 
 
 ```{r plot-data-points-basemap}
-  
 
 ggplot() +
-  geom_polygon(data=or, aes(x=lon, y=lat)) +
+  geom_polygon(data=or, aes(x=lon, y=lat, group=group)) +
   geom_sf(data =vosnesenskii_shp , color = "hotpink") 
 
 ```
@@ -170,7 +169,32 @@ additional attributes when you converted the dataframe to a spatial object.
 ```{r plot-creative}
 
 # adding another spatial layer
-  # 
+  # # extracting X and Y locations from our species to create a spatial object
+
+# vosnesenskii <- OBA_data %>%
+#   filter(Species == "vosnesenskii")
+# 
+# #Y <- vosnesenskii$Dec..Lat.
+# #X <- vosnesenskii$Dec..Long.
+# 
+# 
+# 
+# # set CRS
+# ?st_as_sf
+# vosnesenskii_shp <- st_as_sf(vosnesenskii,
+#                                    coords = c("Dec..Long.", "Dec..Lat."),
+#                                    crs = st_crs("EPSG:4326"), na.fail = FALSE	
+# )
+# 
+# #create a spatial object
+# st_write(vosnesenskii,
+#          "vosnesenskii_final.shp", driver = "ESRI Shapefile", append=FALSE)
+
+
+
+# 1. add spatial data, lines_HARV <- st_read("data/NEON-DS-Site-Layout-Files/HARV/HARV_roads.shp")
+census_shp <- st_read("tl_2024_us_state/tl_2024_us_state.shp")
+# 2. color the data and add a legend 
 
 ```
 
@@ -183,6 +207,9 @@ b. Create a plot that illustrates this summary data (box plot, barplot, scatter 
 c. Create a map of your cropped spatial data.
 
 ```{r buffers}
+
+# a. using distribution of vonesenskii and the census spatial layer, extracting a meaningful summary statistic from spatial layer
+
 
 
 ```
