@@ -28,27 +28,27 @@ library(sf)
 a. Import the OBA data.
 ```{r}
 OBA_data <- read.csv("OBA_2018-2023.csv")
-head(OBA_data)
+#head(OBA_data)
 
 ```
 
 b. Find the columns related to genus and species and paste them together (with a space between) using the function paste(). Name the new column GenusSpecies.
 ```{r}
 
-colnames(OBA_data)
+#colnames(OBA_data)
 #?paste
 #OBA_data$GenusSpecies
 OBA_data <- OBA_data %>% 
   mutate(GenusSpecies = paste(OBA_data$Genus,OBA_data$Species, sep = " "))
 
-colnames(OBA_data)
+#colnames(OBA_data)
 
 ```
 
 c. Use `sort()` and `unique()` to print the unique values of GenusSpecies in alphabetical order.  How many species are there? 
 
 ```{r}
-?sort
+#?sort
 length(unique(sort(OBA_data$GenusSpecies)))
 
 ```
@@ -81,7 +81,7 @@ Bombus vosnesenskii
 
 Import the photos into Rmarkdown below (hint: googling bee name "discover life" or "inat" can often get you a photo. Many bees will no have any photos :( 
 
-![](https://www.inaturalist.org/photos/353270971)
+![](medium.jpg)
 
 
 
@@ -112,7 +112,7 @@ vosnesenskii <- OBA_data %>%
 
 
 # set CRS
-?st_as_sf
+#?st_as_sf
 vosnesenskii_shp <- st_as_sf(vosnesenskii,
                                    coords = c("Dec..Long.", "Dec..Lat."),
                                    crs = st_crs("EPSG:4326"), na.fail = FALSE	
@@ -140,9 +140,9 @@ Luckily we can download basemaps into R using the map_data function in ggplot (a
 ```{r plot-or}
 or <- map_data("county", "oregon") %>% 
   select(lon = long, lat, group, id = subregion)
-
-ggplot() +
-  geom_polygon(data=or, aes(x=lon, y=lat, group=group))
+# 
+# ggplot() +
+#   geom_polygon(data=or, aes(x=lon, y=lat, group=group))
 
 ```
 
@@ -227,9 +227,9 @@ ggplot() +
 # 5. Export you cropped layer to a .shp so you can use it again for your final project.
 
 # cropping data
-st_crs(census_shp)
-str(census_shp)
-st_crs(vosnesenskii_shp)
+#st_crs(census_shp)
+#str(census_shp)
+#st_crs(vosnesenskii_shp)
 
 census_shp_2 <- st_as_sf(census_shp,
                                    coords = c("INTPTLON", "INTPTLAT"),
@@ -258,13 +258,22 @@ st_write(cropped_census_shp,
          "cropped_census_shp.shp", driver = "ESRI Shapefile", append=FALSE)
 
 ```
+# the caption
+The vosnesenskii seem to be more spread around the western half of Oregon,
+with most observations being from 120°W to 124°W. But within that longitudinal
+range, they span the whole latitudinal range of Oregon. Vosnesenskii also don't 
+seem too concerned about differences in population between the different blocks,
+they look to have similar distributions in places with lower populations
+and higher populations.
+
+
 
 We are looking forward to seeing the maps you create! 
 
 # Lab part 4: Spatial summary statistics
  For your final projects, you will likely need to come up with summary statistics that describes the areas around where bees are captured. 
 a. Using the distribution of your chosen bee and the spatial layer you imported in 2.6, extract a meaningful summary statistics from your spatial layer within a buffer of 500, 750 1000 km.
-b. Create a plot that illustrates this summary data (box plot, barplot, scatter plot, historgram). 
+b. Create a plot that illustrates this summary data (box plot, barplot, scatter plot, histogram). 
 c. Create a map of your cropped spatial data.
 
 ```{r buffers}
@@ -283,52 +292,53 @@ census_750 <- st_crop(census_shp, buffer_750)
 census_1000 <- st_crop(census_shp, buffer_1000)
 
 
-# summary statistics
+# summary statistic of average population density for each buffer
 summary_500 <- census_500 %>%
   summarise(
     total_population = sum(POP20, na.rm = TRUE),
-    total_land_area = sum(ALAND, na.rm = TRUE) / 1e6,  # Convert m² to km²
+    total_land_area = sum(ALAND, na.rm = TRUE) / 1e6,  # convert m² to km²
     avg_population_density = total_population / total_land_area
   )
 
 summary_750<- census_750 %>%
   summarise(
     total_population = sum(POP20, na.rm = TRUE),
-    total_land_area = sum(ALAND, na.rm = TRUE) / 1e6,  # Convert m² to km²
+    total_land_area = sum(ALAND, na.rm = TRUE) / 1e6,  # convert m² to km²
     avg_population_density = total_population / total_land_area
   )
 
-summary_10000<- census_1000 %>%
+summary_1000<- census_1000 %>%
   summarise(
     total_population = sum(POP20, na.rm = TRUE),
-    total_land_area = sum(ALAND, na.rm = TRUE) / 1e6,  # Convert m² to km²
+    total_land_area = sum(ALAND, na.rm = TRUE) / 1e6,  # convert m² to km²
     avg_population_density = total_population / total_land_area
   )
 
 
 buffer_stats <- data.frame(
-  Buffer_Size_km = c(500, 750, 10000),
-  Total_Population = c(summary_500$total_population, summary_750$total_population, summary_10000$total_population),
-  Total_Land_Area_km2 = c(summary_500$total_land_area, summary_750$total_land_area, summary_10000$total_land_area),
-  Avg_Population_Density = c(summary_500$avg_population_density, summary_750$avg_population_density, summary_10000$avg_population_density)
+  Buffer_Size_km = c(500, 750, 1000),
+  Total_Population = c(summary_500$total_population, summary_750$total_population, summary_1000$total_population),
+  Total_Land_Area_km2 = c(summary_500$total_land_area, summary_750$total_land_area, summary_1000$total_land_area),
+  Avg_Population_Density = c(summary_500$avg_population_density, summary_750$avg_population_density, summary_1000$avg_population_density)
 )
 
-ggplot(buffer_stats, aes(x = Buffer_Size_km, y = Total_Population)) +
-  geom_bar(stat = "identity", fill = "blue", alpha = 0.7) +
+ggplot(buffer_stats, aes(x= factor(Buffer_Size_km), y=Total_Population)) +
+  geom_bar(stat="identity") +
   labs(
     title = "Total Population Within Buffers",
     x = "Buffer Size (km)",
     y = "Total Population"
   )
 
-
 # map 
 
 ggplot() +
-  geom_sf(data = census_500, fill = "lightblue", alpha = 0.5) +
-  geom_sf(data = census_750, fill = "green", alpha = 0.3) +
-  geom_sf(data = census_1000, fill = "red", alpha = 0.2) +
-  geom_sf(data = vosnesenskii_shp, color = "yellow", size = 0.5) +
+  geom_sf(data = census_500, fill = "lightblue", alpha=0.5) +
+  geom_sf(data = census_750, fill = "green", alpha=0.5) +
+  geom_sf(data = census_1000, fill = "red", alpha=0.5) +
+  geom_sf(data = vosnesenskii_shp, color = "yellow", size = 0.7) +
+  # filling the blocks based on population AND adding legend for this (using a binned color scale)
+  scale_fill_viridis_c(option="turbo", name = "Population", alpha = 0.6) +
   labs(
     title = "Bee Distribution and Census Data within Buffers",
     x = "Longitude",
