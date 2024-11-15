@@ -172,16 +172,90 @@ additional attributes when you converted the dataframe to a spatial object.
   # # extracting X and Y locations from our species to create a spatial object
 
 # 1. add spatial data, ex: lines_HARV <- st_read("data/NEON-DS-Site-Layout-Files/HARV/HARV_roads.shp")
+# 1. Add another spatial layer relevant to your final project and tweek the Oregon map in anyway that is useful/visually appealing. You may need to crop that layer to the extent of your species's distribution. 
+
 census_shp <- st_read("CensusBlockGroups/CensusBlockGroups.shp")
+# str(census_shp)
+# 
+# 
+# ggplot() +
+#   geom_polygon(data=or, aes(x=lon, y=lat, group=group)) +
+#   geom_sf(data =vosnesenskii_shp , color = "hotpink") + 
+#    geom_sf(data=census_shp, color="blue", alpha=0.5)
+
+# 2. Color your points according to some data attribute and add a legend (month collected, county, collector, associated plant, whatever you think is interesting). You may need to circle back to 2.1 to save
+# additional attributes when you converted the dataframe to a spatial object. 
+# coloring the polygons by population 
+
+# ggplot() +
+#   geom_polygon(data=or, aes(x = lon, y = lat, group = group)) + 
+#   scale_fill_viridis_b(option = "plasma", name = "Population", alpha=0.6) + 
+#   geom_sf(data = vosnesenskii_shp, color = "yellow", alpha = 0.9) + 
+#   geom_sf(data = census_shp, aes(fill = POP20), color = "lightblue", alpha = 0.6)
+
+# the range of values for population density is large
+#summary(census_shp$POPDENS20)
+
+# 3. Fine-tune your map: add a title, make sure the legend label makes sense, add a scale bar (google "add scale bar map ggplot" and choose your favorite package). All maps must always have a scale bar. You can add a N arrow as well, though some cartographers argue that is only necessary if N isn't at the top of the map.
+library(ggspatial)
 
 ggplot() +
-  geom_polygon(data=or, aes(x=lon, y=lat, group=group)) +
-  geom_sf(data =vosnesenskii_shp , color = "hotpink") + 
-   geom_sf(data=census_shp, color="blue")
+  # map background of Oregon
+  geom_polygon(data = or, aes(x = lon, y = lat, group = group)) + 
+  # Vosnesenskii points 
+    geom_sf(data = vosnesenskii_shp, color = "yellow", alpha = 0.95, size = 0.5) + 
+  # census block layer
+  geom_sf(data = census_shp, aes(fill = POP20), color = "lightblue", alpha = 0.65) + 
+    # filling the blocks based on population AND adding legend for this (using a binned color scale)
+    scale_fill_viridis_c(option="turbo", name = "Population", alpha = 0.6) +
+    # labels and title
+    labs(
+      title = "Population by Census Block in Oregon",
+      subtitle = "(Including vosnesenskii Distribution)",
+      x = "Longitude",
+      y = "Latitude",
+      caption = "The vosnesenskii seem to be more spread around the western half of Oregon, with most observations being from 120°W to 124°W. But within that longitudinal range, they span the whole latitudinal range of Oregon. Vosnesenskii also don't seem too concerned about differences in population between the different blocks, they look to have similar distributions in places with lower populations and higher populations. "
+    ) + 
+  theme(plot.caption.position = "plot", plot.caption = element_text(hjust = 0, vjust = 2)) + 
+    # adding scale bar
+    #?annotation_scale
+    annotation_scale(location = "tr") +
+  annotation_north_arrow(  height = unit(0.5, "cm"),
+  width = unit(0.5, "cm"))
+    
 
-# 2. color the data and add a legend 
-# adding a legend to the plot
+# 5. Export you cropped layer to a .shp so you can use it again for your final project.
 
+# cropping data
+st_crs(census_shp)
+str(census_shp)
+st_crs(vosnesenskii_shp)
+
+census_shp_2 <- st_as_sf(census_shp,
+                                   coords = c("INTPTLON", "INTPTLAT"),
+                                   crs = st_crs("EPSG:4326"), na.fail = FALSE)
+# matching crs?
+census_shp_2 <- st_transform(census_shp_2, st_crs(vosnesenskii_shp))
+
+# cropping
+species_dist <- st_bbox(vosnesenskii_shp)
+cropped_census_shp <- st_crop(census_shp_2 , species_dist)
+
+# need to rescale ALAND field from sq m to sq km bc its giving an error that there are too many numbers
+cropped_census_shp$AWATER <- cropped_census_shp$AWATER / 1e6  # Convert to km²
+cropped_census_shp$ALAND <- cropped_census_shp$ALAND / 1e6    # Convert to km²
+
+# rename fields to indicate units
+names(cropped_census_shp)[names(cropped_census_shp) == "AWATER"] <- "AWATER_km2"
+names(cropped_census_shp)[names(cropped_census_shp) == "ALAND"] <- "ALAND_km2"
+
+# Keep only essential columns, after getting error about the names 
+cropped_census_shp <- cropped_census_shp[, c("ALAND_km2", "AWATER_km2", "geometry")]
+
+
+#create a spatial object
+st_write(cropped_census_shp,
+         "cropped_census_shp.shp", driver = "ESRI Shapefile", append=FALSE)
 
 ```
 
@@ -196,7 +270,69 @@ c. Create a map of your cropped spatial data.
 ```{r buffers}
 
 # a. using distribution of vonesenskii and the census spatial layer, extracting a meaningful summary statistic from spatial layer
+buffer_500 <- st_buffer(vosnesenskii_shp, dist = 500000)
+buffer_750 <- st_buffer(vosnesenskii_shp, dist = 750000)
+buffer_1000 <- st_buffer(vosnesenskii_shp, dist = 1000000)
+
+#  census_shp to match vosnesenskii_shp CRS
+census_shp <- st_transform(census_shp, st_crs(vosnesenskii_shp))
+
+# clip census layer to the buffers
+census_500 <- st_crop(census_shp, buffer_500)
+census_750 <- st_crop(census_shp, buffer_750)
+census_1000 <- st_crop(census_shp, buffer_1000)
 
 
+# summary statistics
+summary_500 <- census_500 %>%
+  summarise(
+    total_population = sum(POP20, na.rm = TRUE),
+    total_land_area = sum(ALAND, na.rm = TRUE) / 1e6,  # Convert m² to km²
+    avg_population_density = total_population / total_land_area
+  )
+
+summary_750<- census_750 %>%
+  summarise(
+    total_population = sum(POP20, na.rm = TRUE),
+    total_land_area = sum(ALAND, na.rm = TRUE) / 1e6,  # Convert m² to km²
+    avg_population_density = total_population / total_land_area
+  )
+
+summary_10000<- census_1000 %>%
+  summarise(
+    total_population = sum(POP20, na.rm = TRUE),
+    total_land_area = sum(ALAND, na.rm = TRUE) / 1e6,  # Convert m² to km²
+    avg_population_density = total_population / total_land_area
+  )
+
+
+buffer_stats <- data.frame(
+  Buffer_Size_km = c(500, 750, 10000),
+  Total_Population = c(summary_500$total_population, summary_750$total_population, summary_10000$total_population),
+  Total_Land_Area_km2 = c(summary_500$total_land_area, summary_750$total_land_area, summary_10000$total_land_area),
+  Avg_Population_Density = c(summary_500$avg_population_density, summary_750$avg_population_density, summary_10000$avg_population_density)
+)
+
+ggplot(buffer_stats, aes(x = Buffer_Size_km, y = Total_Population)) +
+  geom_bar(stat = "identity", fill = "blue", alpha = 0.7) +
+  labs(
+    title = "Total Population Within Buffers",
+    x = "Buffer Size (km)",
+    y = "Total Population"
+  )
+
+
+# map 
+
+ggplot() +
+  geom_sf(data = census_500, fill = "lightblue", alpha = 0.5) +
+  geom_sf(data = census_750, fill = "green", alpha = 0.3) +
+  geom_sf(data = census_1000, fill = "red", alpha = 0.2) +
+  geom_sf(data = vosnesenskii_shp, color = "yellow", size = 0.5) +
+  labs(
+    title = "Bee Distribution and Census Data within Buffers",
+    x = "Longitude",
+    y = "Latitude"
+  )
 
 ```
