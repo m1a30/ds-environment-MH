@@ -223,13 +223,13 @@ ggplot() +
   annotation_north_arrow(  height = unit(0.5, "cm"),
   width = unit(0.5, "cm"))
     
-# the caption (bc it got cut off)
+# the caption (bc it got cut off) (it's also below!)
   # The vosnesenskii seem to be more spread around the western half of Oregon,
-  # with most observations being from 120°W to 124°W. But within that longitudinal
-  # range, they span the whole latitudinal range of Oregon. Vosnesenskii also don't 
-  # seem too concerned about differences in population between the different blocks,
-  # they look to have similar distributions in places with lower populations
- # and higher populations.
+  # with most observations being from 120°W to 124°W. But within that
+#longitudinal range, they span the whole latitudinal range of Oregon.
+# Vosnesenskii also don't seem too concerned about differences in population
+# between the different blocks, they look to have similar distributions in 
+# places with lower populations and higher populations.
 
 
 
