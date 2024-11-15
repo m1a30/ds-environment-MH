@@ -223,6 +223,15 @@ ggplot() +
   annotation_north_arrow(  height = unit(0.5, "cm"),
   width = unit(0.5, "cm"))
     
+# the caption (bc it got cut off)
+  # The vosnesenskii seem to be more spread around the western half of Oregon,
+  # with most observations being from 120°W to 124°W. But within that longitudinal
+  # range, they span the whole latitudinal range of Oregon. Vosnesenskii also don't 
+  # seem too concerned about differences in population between the different blocks,
+  # they look to have similar distributions in places with lower populations
+ # and higher populations.
+
+
 
 # 5. Export you cropped layer to a .shp so you can use it again for your final project.
 
@@ -258,7 +267,7 @@ st_write(cropped_census_shp,
          "cropped_census_shp.shp", driver = "ESRI Shapefile", append=FALSE)
 
 ```
-# the caption
+# the caption (bc it got cut off)
 The vosnesenskii seem to be more spread around the western half of Oregon,
 with most observations being from 120°W to 124°W. But within that longitudinal
 range, they span the whole latitudinal range of Oregon. Vosnesenskii also don't 
@@ -333,12 +342,14 @@ ggplot(buffer_stats, aes(x= factor(Buffer_Size_km), y=Total_Population)) +
 # map 
 
 ggplot() +
-  geom_sf(data = census_500, fill = "lightblue", alpha=0.5) +
-  geom_sf(data = census_750, fill = "green", alpha=0.5) +
-  geom_sf(data = census_1000, fill = "red", alpha=0.5) +
-  geom_sf(data = vosnesenskii_shp, color = "yellow", size = 0.7) +
-  # filling the blocks based on population AND adding legend for this (using a binned color scale)
+    geom_polygon(data = or, aes(x = lon, y = lat, group = group)) + 
+  geom_sf(data = census_shp, aes(fill = POP20), color = "lightblue", alpha = 0.65) + 
+    # filling the blocks based on population AND adding legend for this (using a binned color scale)
   scale_fill_viridis_c(option="turbo", name = "Population", alpha = 0.6) +
+  geom_sf(data = buffer_500, fill = NA, color = "blue") +
+  geom_sf(data = buffer_750, fill = NA, color = "green") +
+  geom_sf(data = buffer_1000, fill = NA, color = "red") +
+  geom_sf(data = vosnesenskii_shp, color = "yellow", size = 0.7) +
   labs(
     title = "Bee Distribution and Census Data within Buffers",
     x = "Longitude",
