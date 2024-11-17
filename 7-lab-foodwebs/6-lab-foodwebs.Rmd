@@ -56,6 +56,19 @@ a. Use the above vector of species names to label the row names of the species o
 
 ```{r set-labels}
 
+# above species names -> row_labs_sp
+  # to label row names of species occurrence and body size matrices
+rownames(sp_occ) <- row_labs_sp
+# leave columns of species occurence matrixes as V1, V2 etc
+
+# set column names of mass matrix as "f", "m"
+colnames(sp_mass) <- c("f", "m")
+rownames(sp_mass) <- row_labs_sp
+
+
+head(sp_occ)
+head(sp_mass)
+
 ```
 Yeakel recommended an updated equation to estimate the probability a predator consumed a prey based on their relative body masses from [Rohr et al. 2010.](https://doi.org/10.1086/653667). The  probability of existence of a trophic link between a predator of body-size $m_i$ and a prey of body-size $m_j$ is given by:
 
@@ -70,11 +83,22 @@ Below are the values of alpha, beta, and gamma for the Serengeti.  In addition, 
 alpha <- 2.51
 beta <- 0.79
 gamma <- -0.37
-  
+
 inv_logit <- function(x) exp(x)/(1+exp(x))
 ```
 
 ```{r function-mass-comp}
+#body-size $m_i$ and a prey of body-size $m_j$ is given by:
+probEat <- function(alpha, beta, gamma, mass_1, mass_2){
+  
+  equation = (alpha) + (beta*log(mass_1/mass_2)) +
+    gamma*(log(mass_1/mass_2))^2
+  
+  # using inv_logit to get a 0 or 1 value
+  return (round((inv_logit(equation)), 2))
+  
+}
+
 
 ```
 
@@ -84,13 +108,53 @@ Hint: if you start with a square matrix of all zeros (one row and one column for
 
 ```{r create-adj-mat}
 
+# calculate all feeding probabilities based on body sizes
+  # assume all species are the size of females 
+sp_mass_f <- sp_mass$f
 
+# start with a square matrix of all zeros 
+adj_matrix <- matrix(0, nrow = nrow(sp_occ), ncol = nrow(sp_occ))
+colnames(adj_matrix) <- rownames(adj_matrix) <- rownames(sp_occ)
+
+ # using for loop to fill the matrix with probabilities from the function above
+for (i in 1:length(row_labs_sp)){
+  for (j in 1:length(row_labs_sp)) {
+   
+     adj_matrix[i, j] <- probEat(alpha, beta, gamma, sp_mass_f[i], sp_mass_f[j])
+    
+  }
+}
+
+#adj_matrix
 ```
 
 d. Now that you have your matrix of potential feeding interactions based on body size, use the 'carnivores' vector created above to set all of the feeding interactions of herbivores (0s in that vector) to zero. In foodwebs the columns are the higher trophic level and the rows are the lower.
 HINT: the function 'sweep' may be useful, though there are many approaches to do the needed matrix multiplication. Print the row and column sums. 
 
 ```{r create-adj-mat-2}
+
+# use carnivores vector from above to set all feeding interactions of herbivores to 0
+
+
+
+#?sweep
+# if not a carnivore? set the interactions of herbivores to 0
+  # so using "carnivores" to id which columns will remain the same and which ones will be zeroed 
+# https://www.r-bloggers.com/2022/07/how-to-use-the-sweep-function-in-r/
+# sweep(x, MARGIN, STATS, FUN)
+  # x: Name of the matrix
+  # MARGIN: The margin on which to run the function (1 = rows, 2 = columns)
+  # STATS: The value(s) to use in the function
+  # FUN: The function to perform
+# using multiplication bc that will multiply the herbivores by 0, making them 0 
+adj_matrix <- sweep(adj_matrix, 2, carnivores, "*")
+
+# print row/col sums
+row_sums <- rowSums(adj_matrix)
+col_sums <- colSums(adj_matrix)
+
+print(row_sums)
+print(col_sums)
 
 ```
 
@@ -103,6 +167,20 @@ Use the function 'empty' from the bipartite package to empty the matrix of rows 
 HINT: You will need to zero out the rows where a species in not present in that time period and the columns. The function 'sweep' may be useful again.
 
 ```{r t1-time-webs}
+# create web for each time period
+  # incl only species that were not extinct in the period
+# try using the 2nd time period/the second column of 'sp_occ'
+present_species <- sp_occ[,2]
+
+# using sweep to zero out rows/columns for extinct species
+adj_matrix <- sweep(adj_matrix, 1, present_species, '*')
+adj_matrix <- sweep(adj_matrix, 2, present_species, '*')
+
+# using function 'empty' to empty matrix of rows/cols with no interactions
+
+adj_matrix_cleaned <- empty(adj_matrix)
+
+print(nrow(adj_matrix_cleaned))
 
 ```
 
@@ -112,12 +190,36 @@ HINT: If choosing the for loop route, remember to create an empty list of a spec
 
 ```{r all-time-webs}
 
+# creating list where each element is a network
+  # need to use a for loop or lapply
+
+# function for creating a network for one time period
+create_network <- function(present_species) {
+  
+  # using sweep to zero out rows/columns for extinct species
+adj_matrix <- sweep(adj_matrix, 1, present_species, '*')
+adj_matrix <- sweep(adj_matrix, 2, present_species, '*')
+
+# using function 'empty' to empty matrix of rows/cols with no interactions
+
+adj_matrix_cleaned <- empty(adj_matrix)
+
+return (adj_matrix_cleaned)
+  
+}
+
+
+# applying the function to each col of sp_occ
+all_networks <- lapply(sp_occ, create_network)
+
+
 ```
 
 # Lab part 3: Visualize the networks
 a. Convert the adjacency matrices to igraph class objects using the function 'graph_from_adjacency_matrix'. You can use a for loop or an lapply. Because these are food webs, set the argument mode to "directed" and the argument diag to FALSE (this means a species cannot consumer members of its own species, i.e., no canabalism/self-loops). Also remember that these interactions are weighted.  
 
 ```{r graphs}
+
 
 ```
 
