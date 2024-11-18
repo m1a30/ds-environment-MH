@@ -148,7 +148,7 @@ HINT: the function 'sweep' may be useful, though there are many approaches to do
   # FUN: The function to perform
 # using multiplication bc that will multiply the herbivores by 0, making them 0 
 adj_matrix <- sweep(adj_matrix, 2, carnivores, "*")
-
+adj_matrix <- sweep(adj_matrix, 1, carnivores, "*")
 # print row/col sums
 row_sums <- rowSums(adj_matrix)
 col_sums <- colSums(adj_matrix)
@@ -209,17 +209,14 @@ return (adj_matrix_cleaned)
 }
 
 
-# applying the function to each col of sp_occ
-all_networks <- lapply(sp_occ, create_network)
-
-
 ```
+
+
 
 # Lab part 3: Visualize the networks
 a. Convert the adjacency matrices to igraph class objects using the function 'graph_from_adjacency_matrix'. You can use a for loop or an lapply. Because these are food webs, set the argument mode to "directed" and the argument diag to FALSE (this means a species cannot consumer members of its own species, i.e., no canabalism/self-loops). Also remember that these interactions are weighted.  
 
 ```{r graphs}
-
 
 ```
 
