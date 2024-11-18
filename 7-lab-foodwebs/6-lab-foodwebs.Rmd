@@ -125,7 +125,6 @@ for (i in 1:length(row_labs_sp)){
   }
 }
 
-#adj_matrix
 ```
 
 d. Now that you have your matrix of potential feeding interactions based on body size, use the 'carnivores' vector created above to set all of the feeding interactions of herbivores (0s in that vector) to zero. In foodwebs the columns are the higher trophic level and the rows are the lower.
@@ -147,8 +146,9 @@ HINT: the function 'sweep' may be useful, though there are many approaches to do
   # STATS: The value(s) to use in the function
   # FUN: The function to perform
 # using multiplication bc that will multiply the herbivores by 0, making them 0 
-adj_matrix <- sweep(adj_matrix, 2, carnivores, "*")
+  # TODO confused on whether we're interested in running the function on rows or columns? or does it matter if they both have the same species and number of species?
 adj_matrix <- sweep(adj_matrix, 1, carnivores, "*")
+
 # print row/col sums
 row_sums <- rowSums(adj_matrix)
 col_sums <- colSums(adj_matrix)
@@ -167,17 +167,18 @@ Use the function 'empty' from the bipartite package to empty the matrix of rows 
 HINT: You will need to zero out the rows where a species in not present in that time period and the columns. The function 'sweep' may be useful again.
 
 ```{r t1-time-webs}
+# TODO : confused on this question? 
+
 # create web for each time period
   # incl only species that were not extinct in the period
 # try using the 2nd time period/the second column of 'sp_occ'
 present_species <- sp_occ[,2]
 
-# using sweep to zero out rows/columns for extinct species
-adj_matrix <- sweep(adj_matrix, 1, present_species, '*')
-adj_matrix <- sweep(adj_matrix, 2, present_species, '*')
+# using sweep again, in the same way as above?
+adj_matrix <- sweep(adj_matrix, 1, present_species, "*")
+
 
 # using function 'empty' to empty matrix of rows/cols with no interactions
-
 adj_matrix_cleaned <- empty(adj_matrix)
 
 print(nrow(adj_matrix_cleaned))
@@ -208,6 +209,8 @@ return (adj_matrix_cleaned)
   
 }
 
+# using lapply
+network <- lapply( , create_network)
 
 ```
 
@@ -217,6 +220,11 @@ return (adj_matrix_cleaned)
 a. Convert the adjacency matrices to igraph class objects using the function 'graph_from_adjacency_matrix'. You can use a for loop or an lapply. Because these are food webs, set the argument mode to "directed" and the argument diag to FALSE (this means a species cannot consumer members of its own species, i.e., no canabalism/self-loops). Also remember that these interactions are weighted.  
 
 ```{r graphs}
+
+# convert adj matrices to igrpah class objects
+  # function: graph_from_adjacency_matrix (x= adj_matrix, mode = "directed", diag = FALSE, weighted = TRUE)
+#?graph_from_adjacency_matrix
+
 
 ```
 
