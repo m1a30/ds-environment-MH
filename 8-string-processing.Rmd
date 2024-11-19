@@ -41,11 +41,15 @@ Note that *strsplit* returns a list because it can operate on a character vector
 *substring* takes the start and end element number to extract or replace. 
 
 ```{r, r-basics-1}
+
 times <- c("04:18:04", "12:12:53", "13:47:00")
+time.pieces <- strsplit(times, ":")
+
 substring(times, 7, 8)
 
-substring(times[3], 1, 2) <- '01'   ## replacement
+substring(times[3], 1, 2) <- '01'   ## replacement, (changing from military time 13 to 1pm)
 times
+
 ```
 
 
@@ -60,7 +64,9 @@ dates <- c("2016-08-03", "2007-09-05", "2016-01-02")
 grep("2016", dates)
 grepl("2016", dates)
 gregexpr("2016", dates)
-gsub("2016", "16", dates)
+gsub("2016", "16", dates) # if you want to replace a small thing 
+
+# grep is more old school in git/python/is in base r/bash , stringr is more new
 ```
 
 ## String manipulation using *stringr*
@@ -198,6 +204,18 @@ str_replace_all(text, "[[:digit:]]", "Z")
 In class challenge: What will the regular expression `^[Oo]rgani.e\b` match?
 
 ```{r, class-challenge-1}
+# has to start with o or 0
+
+# ^ starts it, can't be anything past the \b
+
+Organize 
+organize
+organise
+Organise
+  # any character can go in organi-any character-e
+
+# with this could fix any misspellings of organize in one go
+
 ```
 
 
@@ -218,6 +236,9 @@ str_extract_all(text, pattern)
 In class challenge 2: How would I extract an email address from an arbitrary text string?
 
 ```{r, class-challenge-2}
+
+email_pattern <- "[A-Za-z0-9][@][A-Za-z0-9][.][com | edu]\b"
+
 ```
 
 ### Groups
@@ -236,11 +257,16 @@ text <- c("Here's my number: 919-543-3300.", "hi John, good to meet you",
 # + matches the previous token between one to unlimited times
 # 0-9 matches a single character in the range between 0
 
+  # find this pattern, replace it with this pattern
 str_replace_all(text, "([0-9]+)", "_\\1_")
 
 ```
 
 In class challenge 3: Suppose a text string has dates in the form “Aug-3”, “May-9”, etc. and I want them in the form “3 Aug”, “9 May”, etc. How would I do this search/replace?
+
+text_dates <- c("Aug-3", "May-9")
+str_replace_all(text_dates, "[A-Z]+[-][0-9]+", "[0-9]+[ ][A-Z]+")
+
 
 ### Other comments
 
