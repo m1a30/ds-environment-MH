@@ -180,12 +180,11 @@ present_species <- sp_occ[,2]
 adj_matrix <- sweep(adj_matrix, 1, present_species, "*")
 adj_matrix <- sweep(adj_matrix, 2, present_species, "*")
 
-
 # using function 'empty' to empty matrix of rows/cols with no interactions
-adj_matrix_cleaned <- empty(adj_matrix)
+#adj_matrix_cleaned <- empty(adj_matrix)
 
-print(nrow(adj_matrix_cleaned))
-dim(adj_matrix_cleaned)
+print(nrow(adj_matrix))
+dim(adj_matrix)
 ```
 
 
@@ -210,7 +209,7 @@ adj_matrix <- sweep(adj_matrix, 2, present_species, '*')
 
 #adj_matrix_cleaned <- empty(adj_matrix)
 
-return (adj_matrix_cleaned)
+return (adj_matrix)
   
 }
 
@@ -243,27 +242,52 @@ a. Convert the adjacency matrices to igraph class objects using the function 'gr
   # function: graph_from_adjacency_matrix (x= adj_matrix, mode = "directed", diag = FALSE, weighted = TRUE)
 #?graph_from_adjacency_matrix
 
+convert_to_igraph <- function (adj_matrix) {
+  graph_from_adjacency_matrix(
+    adj_matrix,
+    mode = "directed",
+    diag = FALSE,
+    weighted = TRUE
+    )
+}
 
+# convert all adj matrices in list to igraph object
+igraph_list <- lapply(network_list, convert_to_igraph)
 ```
 
 b. Plot three networks of your choice, using different colors for the predators and prey.
 
 ```{r plot-g1}
 ## assign groups as carnivore or herbivore
+assign_groups <- function(carnivores){
+  ifelse(carnivores == 1, "carnivore", "herbivore")
+}
 
+#print(assign_groups(carnivores))
 
 ## convert to a network 3d object
+convert_to_3d_network <- function(i_graph, carnivores, title){
+  # assigning the different colors 
+  i_graph$group <- assign_groups(carnivores)
+  i_graph$color <- ifelse(i_graph$group == "carnivore", "red", "forestgreen")
+  plot(
+    i_graph,
+    vertex.color = i_graph$color,
+    vertex.size = 10,
+    vertex.label = NA
+  )
+}
 
 ## plot the network
-
+convert_to_3d_network(igraph_list[[1]], carnivores, title = "Network 1")
 
 ```
 
 ```{r plot-g2}
-
+convert_to_3d_network(igraph_list[[23]], carnivores, title = "Network 23")
 ```
 
 ```{r plot-g3}
-
+convert_to_3d_network(igraph_list[[13]], carnivores, title = "Network 13")
 ```
 
