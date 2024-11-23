@@ -30,6 +30,7 @@ Import the OBA data using your favorite parsing function, name the data oba.
 a. 
 ```{r}
 
+oba <- read.csv("Data/OBA_2018-2023.csv")
 
 ```
 
@@ -38,7 +39,13 @@ b. Examine the unique entries of 'Associated.plant' using any function you find 
 
 
 ```{r}
+head(oba)
 
+# examine unique entries 
+head(unique(oba$Associated.plant))
+
+# what are two patterns in the associated taxa that should be removed?
+  # the ones that have common names after the genus/species name?, where sp doesn't have a period
 
 ```
 
@@ -67,6 +74,49 @@ oba$Associated.plant <- str_replace_all(oba$Associated.plant, "\x92", "")
 
 ## To check that it worked
 sort(unique(oba$Associated.plant))[1:10]
+
+
+## Remove the special character
+
+ oba$Associated.plant <- str_replace_all(oba$Associated.plant, "\x92", "")
+ 
+## Remove the rows with no plant name.
+
+ oba <- oba[oba$Associated.plant != "",]
+ 
+## Remove "net"
+
+ oba <- oba[oba$Associated.plant != "Net",]
+ 
+## Fix yarrow
+
+ oba$Associated.plant[oba$Associated.plant == "Yarrow"] <- "Achillea millefolium"
+ 
+## Remove a random weird one
+
+ oba <- oba[oba$Associated.plant != "Weedy yellow comp.",]
+ 
+## Remove names in ()
+
+ oba$Associated.plant <- str_replace_all(oba$Associated.plant, "\\(.*?\\)", "")
+ 
+## Still some issues with words after commas
+
+ oba$Associated.plant <- str_replace_all(oba$Associated.plant, ",.*$", "")
+ 
+## Some have write space at the end of the string now
+
+ oba$Associated.plant <- str_replace_all(oba$Associated.plant, "\\s+$", "")
+ 
+## And now there are a few instances where sp doesn't have a period.
+
+ oba$Associated.plant <- str_replace_all(oba$Associated.plant, " sp$", " sp.")
+ 
+## Remove the or and everything after it, could also consider dropping these...
+
+ oba$Associated.plant <- str_replace_all(oba$Associated.plant, " or .*", "")
+ 
+sort(unique(oba$Associated.plant))[1:10]
 ```
 
 # Part 2: Making a column for plant resolution
@@ -81,6 +131,18 @@ Hint: `str_count` may be useful.
 
 ```{r}
 
+# plantResolution column, assign it to "Family", "Genus", "Species" 
+
+# use regular expressions to count up the number of words in each element of assoc taxa
+    # assign count to a new column called plantTaxaWordCount, print first 50
+
+# str_count(string, pattern) Locate positions of pattern matches in a string
+
+oba <- oba %>% 
+  mutate(plantTaxaWordCount = str_count(oba$Associated.plant, '\\b\\w+\\b'))
+
+head(oba$plantTaxaWordCount, 50)
+
 ```
 
 b. Write a for loop to assigned each entry of the column plantResolution to be "family", "genus" or "species". `table()` the final result. 
@@ -89,6 +151,7 @@ Hint hint: The function `ifelse` returns one value if a TRUE and another if FALS
 Hint hint hint: `grepl` will return or TRUE or FALSE depending on whether it finds the pattern. Be careful with periods in patterns because alone they are a wild card character.  
 
 ```{r}
+
 
 ```
 
