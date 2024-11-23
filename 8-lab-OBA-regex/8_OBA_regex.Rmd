@@ -1,6 +1,6 @@
 ---
 title: "Using regular expressions"
-output: github_document
+output: pdf_document
 author:
   - Lauren Ponisio
 ---
@@ -21,6 +21,7 @@ library(dplyr)
 library(igraph)
 library(networkD3)
 library(stringr)
+library(tidyverse)
 ```
 
 # Part 1: Oregon bee atlas data exploration 
@@ -65,7 +66,7 @@ c. Work together as a class to resolve the issues you listed with the associated
 
 I have removed a really strange issue with special characters (R converted an apostrophie into a special character) to start things off. 
 
-Hint: You must \ any special characters. For example to use \s (matches any space, tab, or newline) you must use \\s in your pattern.
+
 
 ```{r}
 
@@ -152,12 +153,44 @@ Hint hint hint: `grepl` will return or TRUE or FALSE depending on whether it fin
 
 ```{r}
 
+# writing for to assign each entry of plantResolution for family genus or species
+  # ifelse returns one value if a TRUE and another if FALSE
+  # grepl will return TRUE or FALSE depending on whether it finds the pattern
+
+# initialize new column plantResolution
+oba <- oba %>% 
+  add_column(plantResolution = NA)
+
+
+  
+for (i in 1:nrow(oba)) {
+  
+  if (oba$plantTaxaWordCount[i] == 2 | oba$plantTaxaWordCount[i] == 3){
+    oba$plantResolution[i] <- "species"
+  }
+  
+  else if (oba$plantTaxaWordCount[i] == 1 &&
+           str_detect(oba$Associated.plant[i], "aceae\\b")){
+    
+    oba$plantResolution[i] <- "family"
+  }
+  
+  else {oba$plantResolution[i] <- "genus"}
+  
+  
+}
+
+#unique(oba$plantResolution)
 
 ```
 
 c. For those that are identified to genus but are lacking an sp., add that now so that they will not be treated as separate plant species (i.e., Rosa vs Rosa sp.). You can do this with a regular expression and using 'gsub' or 'string_replace_all' or by counting up the number of words in Associated.plant. 
 ```{r}
 
+oba$Associated.plant <- ifelse(
+  (oba$plantResolution == "genus" & !str_detect(oba$Associated.plant, "sp.\\b")), str_replace_all(oba$Associated.plant,"$", " sp."), 
+  oba$Associated.plant
+)
 
 
 ## To check that it worked
@@ -166,6 +199,29 @@ unique(oba$Associated.plant[oba$plantResolution == "genus"])
 
 d. Create a new column called plantGenus that is the genus if the associated taxa was resolved to species or genus, and NA if it was resolved to family. 
 ```{r}
+
+oba <- oba %>% 
+  add_column(plantGenus = NA)
+
+for (i in 1:nrow(oba)) {
+  
+  if (oba$plantResolution[i] == "genus"){
+    # takes the genus if it's == genus
+    oba$plantGenus[i] <- oba$Associated.plant[i]
+  }
+  
+  else if(oba$plantResolution[i] == "species"){
+    
+    # takes the first part of species 
+    oba$plantGenus[i] <- str_extract(oba$Associated.plant[i], "^[A-Za-z]+\\b")
+    
+  }
+  
+  else {
+    oba$plantGenus[i] <- NA
+    }
+}
+
 
 ## To check finish with
 table(oba$plantGenus)
